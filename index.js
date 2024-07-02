@@ -8,7 +8,7 @@ const ApiKey = process.env.API_KEY;
 const bot = new TelegramApi(token, { polling: true });
 
 const channelIdAll = '-1002191506094'; // ID канала для всех полученных данных
-const channelIdNew = '-1002196076246'; // ID канала для новых данных без компании и оффера
+const channelIdNew = '-1002196076246'; 
 
 let lastProcessedConversionTime = null;
 
