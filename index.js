@@ -11,6 +11,10 @@ const bot = new TelegramApi(token, { polling: true });
 const channelIdAll = '-1002191506094'; // ID канала для всех полученных данных
 const channelIdNew = '-1002196076246'; // ID канала для новых данных
 
+
+const formatTimestamp = (timestamp) => {
+    return dayjs.unix(timestamp).format('YYYY-MM-DD HH:mm:ss');
+};
 // Функция для обработки и отправки сообщений в канал "All"
 const sendToChannelAll = async (data) => {
     try {
@@ -19,7 +23,7 @@ const sendToChannelAll = async (data) => {
         const message = `
     Новая конверсия для админов:
     ClickID: ${data.clickid}
-    Time: ${data.date} ${data.time}
+    Time: ${data.date} ${formatTimestamp(data.time)}
     App: ${data.campaign_name}
     GEO: ${data.country}
     Offer: ${data.offer_name}
