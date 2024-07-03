@@ -1,11 +1,15 @@
 const express = require('express');
 const TelegramApi = require('node-telegram-bot-api');
+const dayjs = require('dayjs');
+const { default: axios } = require('axios');
+const { Console } = require('console');
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 const token = process.env.TOKEN;
+const ApiKey = process.env.API_KEY;
 const bot = new TelegramApi(token, { polling: true });
 
 const channelIdAll = '-1002191506094'; // ID канала для всех полученных данных
@@ -16,14 +20,16 @@ const formatTimestamp = (timestamp) => {
     return dayjs.unix(timestamp).format('YYYY-MM-DD HH:mm:ss');
 };
 // Функция для обработки и отправки сообщений в канал "All"
-const sendToChannelAll = async (data) => {
+const sendToChannelAll = async (data,conversedAt,timeSinceClick) => {
     try {
 
 
         const message = `
-    Новая конверсия для админов:
+    Новая конверсия :
     ClickID: ${data.clickid}
-    Time: ${data.date} ${formatTimestamp(data.time)}
+    Time: ${formatTimestamp(data.time)}
+    Время с момента клика: ${timeSinceClick}
+    Время конверсии: ${conversedAt}
     App: ${data.campaign_name}
     GEO: ${data.country}
     Offer: ${data.offer_name}
@@ -39,13 +45,15 @@ const sendToChannelAll = async (data) => {
 };
 
 
-const sendToChannelNew = async (data) => {
+const sendToChannelNew = async (data,conversedAt,timeSinceClick) => {
 
     try {
         const message = `
-    Новая конверсия для команды:
+    Новая конверсия :
     ClickID: ${data.clickid}
-    Time: ${data.date} ${data.time}
+    Time: ${formatTimestamp(data.time)}
+    Время с момента клика: ${timeSinceClick}
+    Время конверсии: ${conversedAt}
     App: ${data.campaign_name}
     GEO: ${data.country}
     Offer: ${data.offer_name}
@@ -62,6 +70,7 @@ const sendToChannelNew = async (data) => {
 
 app.get('/postback', async (req, res) => {
     try {
+       
         const postData = {
             clickid,
             date,
@@ -73,16 +82,24 @@ app.get('/postback', async (req, res) => {
             payout
         } = req.query;
 
+ const response = await axios.get(`https://silktraff.com/public/api/v1/conversion/${postData.clickid}`,{
+    headers:{
+        'api-key': ApiKey,
 
-        await sendToChannelAll(postData);
-        await sendToChannelNew(postData);
+    }
+ })
+const conversedAt = response.data.conversed_at;
+const timeSinceClick = response.data.time_since_click;
 
+await sendToChannelAll(postData, conversedAt, timeSinceClick);
+await sendToChannelNew(postData, conversedAt, timeSinceClick);
         res.status(200).send('Postback received');
     } catch (error) {
         console.error('Error processing postback:', error);
         res.status(500).send('Internal Server Error');
     }
 });
+
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
