@@ -15,27 +15,43 @@ const bot = new TelegramApi(token, { polling: true });
 const channelIdAll = '-1002191506094'; // ID канала для всех полученных данных
 const channelIdNew = '-1002196076246'; // ID канала для новых данных
 
+const affiliateNetworkMapping = {
+    'Partners #1': 'Cpa bro',
+    'Partners #2': 'Advertise',
+    'Partners #3': '1WIN',
+    'Partners #4': 'Holy Cash',
+    'Partners #5': 'Vpartners',
+    'Partners #6': '4rabet',
+    'Partners #7': 'NSQ',
+    'Partners #8': 'CGS',
+    'Partners #9': 'Play Cash'
+};
 
 const formatTimestamp = (timestamp) => {
-    return dayjs.unix(timestamp).format('YYYY-MM-DD HH:mm:ss');
+    return dayjs.unix(timestamp).add(3, 'hour').format('YYYY-MM-DD HH:mm:ss');
+};
+
+const transformOfferName = (offerName) => {
+    const parts = offerName.split('|');
+    if (parts.length >= 5) {
+        return parts.slice(2, -2).join('|').trim();
+    }
+    return offerName;
 };
 // Функция для обработки и отправки сообщений в канал "All"
 const sendToChannelAll = async (data,conversedAt,timeSinceClick) => {
     try {
 
 
-        const message = `
-    Новая конверсия :
-    ClickID: ${data.clickid}
-    Time: ${formatTimestamp(data.time)}
-    Время с момента клика: ${timeSinceClick}
-    Время конверсии: ${conversedAt}
-    App: ${data.campaign_name}
-    GEO: ${data.country}
-    Offer: ${data.offer_name}
-    Network: ${data.affiliate_network_name}
-    Revenue: ${data.payout}
-    `;
+const message = `
+First Dep 💸:
+ClickID: ${data.clickid}
+Time: ${formatTimestamp(data.time)}
+App: ${data.campaign_name}
+GEO: ${data.country}
+Offer: ${data.offer_name}
+Network: ${data.affiliate_network_name}
+Revenue: ${data.payout}`;
 
         await bot.sendMessage(channelIdAll, message);
         console.log("Конверсия успешно отправлена в канал для админов")
@@ -48,17 +64,14 @@ const sendToChannelAll = async (data,conversedAt,timeSinceClick) => {
 const sendToChannelNew = async (data,conversedAt,timeSinceClick) => {
 
     try {
-        const message = `
-    Новая конверсия :
-    ClickID: ${data.clickid}
-    Time: ${formatTimestamp(data.time)}
-    Время с момента клика: ${timeSinceClick}
-    Время конверсии: ${conversedAt}
-    App: ${data.campaign_name}
-    GEO: ${data.country}
-    Offer: ${data.offer_name}
-    Revenue: ${data.payout}
-    `;
+const message = `
+First Dep 💸:
+ClickID: ${data.clickid}
+Time: ${formatTimestamp(data.time)}
+App: ${data.campaign_name}
+GEO: ${data.country}
+Offer: ${data.offer_name}
+Revenue: ${data.payout}`;
 
         await bot.sendMessage(channelIdNew, message);
         console.log("Конверсия успешно отправлена в канал для команды")
@@ -81,6 +94,11 @@ app.get('/postback', async (req, res) => {
             affiliate_network_name,
             payout
         } = req.query;
+
+        if (affiliateNetworkMapping[postData.affiliate_network_name]) {
+            postData.affiliate_network_name = affiliateNetworkMapping[postData.affiliate_network_name];
+        }
+        postData.offer_name = transformOfferName(postData.offer_name);
 
  const response = await axios.get(`https://silktraff.com/public/api/v1/conversion/${postData.clickid}`,{
     headers:{
