@@ -6,14 +6,15 @@ const { Console } = require('console');
 require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = 3000;
 
 const token = process.env.TOKEN;
 const ApiKey = process.env.API_KEY;
 const bot = new TelegramApi(token, { polling: true });
 
-const channelIdAll = '-1002191506094'; // ID канала для всех полученных данных
-const channelIdNew = '-1002196076246'; // ID канала для новых данных
+const channelAll = '-1002191506094'; // ID канала для всех полученных данных
+const channelPasha = '-1002196076246';// ID канала для новых данных
+const channelArtur = '-1002211371353';
 
 const affiliateNetworkMapping = {
     'Partners #1': 'Cpa bro',
@@ -24,7 +25,9 @@ const affiliateNetworkMapping = {
     'Partners #6': '4rabet',
     'Partners #7': 'NSQ',
     'Partners #8': 'CGS',
-    'Partners #9': 'Play Cash'
+    'Partners #9': 'Play Cash',
+    'Partners #10': '247 Partners',
+
 };
 
 const formatTimestamp = (timestamp) => {
@@ -38,12 +41,12 @@ const transformOfferName = (offerName) => {
     }
     return offerName;
 };
-// Функция для обработки и отправки сообщений в канал "All"
-const sendToChannelAll = async (data,conversedAt,timeSinceClick) => {
+
+
+const sendToChannelAll = async (data) => {
     try {
 
-
-const message = `
+        const message = `
 First Dep 💸:
 ClickID: ${data.clickid}
 Time: ${formatTimestamp(data.time)}
@@ -53,7 +56,7 @@ Offer: ${data.offer_name}
 Network: ${data.affiliate_network_name}
 Revenue: ${data.payout}`;
 
-        await bot.sendMessage(channelIdAll, message);
+        await bot.sendMessage(channelAll, message);
         console.log("Конверсия успешно отправлена в канал для админов")
     } catch (error) {
         console.log("Ошибка отправи конверсии в канал админов", error)
@@ -61,10 +64,10 @@ Revenue: ${data.payout}`;
 };
 
 
-const sendToChannelNew = async (data,conversedAt,timeSinceClick) => {
+const sendToChannelNew = async (data, responsiblePerson) => {
 
     try {
-const message = `
+        const message = `
 First Dep 💸:
 ClickID: ${data.clickid}
 Time: ${formatTimestamp(data.time)}
@@ -73,7 +76,14 @@ GEO: ${data.country}
 Offer: ${data.offer_name}
 Revenue: ${data.payout}`;
 
-        await bot.sendMessage(channelIdNew, message);
+        if (responsiblePerson === 'Artur') {
+            await bot.sendMessage(channelArtur, message);
+        }
+        if (responsiblePerson === 'Pasha') {
+            await bot.sendMessage(channelPasha, message);
+        }
+
+
         console.log("Конверсия успешно отправлена в канал для команды")
     } catch (error) {
         console.log("Ошибка отправи конверсии в канал команды", error)
@@ -83,7 +93,7 @@ Revenue: ${data.payout}`;
 
 app.get('/postback', async (req, res) => {
     try {
-       
+
         const postData = {
             clickid,
             date,
@@ -98,19 +108,24 @@ app.get('/postback', async (req, res) => {
         if (affiliateNetworkMapping[postData.affiliate_network_name]) {
             postData.affiliate_network_name = affiliateNetworkMapping[postData.affiliate_network_name];
         }
+
         postData.offer_name = transformOfferName(postData.offer_name);
 
- const response = await axios.get(`https://silktraff.com/public/api/v1/conversion/${postData.clickid}`,{
-    headers:{
-        'api-key': ApiKey,
+        const offerParts = postData.campaign_name.split('|');
+        const responsiblePerson = offerParts[offerParts.length - 1].trim();
+      
 
-    }
- })
-const conversedAt = response.data.conversed_at;
-const timeSinceClick = response.data.time_since_click;
+        // const response = await axios.get(`https://silktraff.com/public/api/v1/conversion/${postData.clickid}`, {
+        //     headers: {
+        //         'api-key': ApiKey,
 
-await sendToChannelAll(postData, conversedAt, timeSinceClick);
-await sendToChannelNew(postData, conversedAt, timeSinceClick);
+        //     }
+        // })
+
+    
+        await sendToChannelNew(postData, responsiblePerson);
+        await sendToChannelAll(postData);
+
         res.status(200).send('Postback received');
     } catch (error) {
         console.error('Error processing postback:', error);

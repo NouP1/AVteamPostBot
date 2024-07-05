@@ -2,9 +2,9 @@
   "name": "avteampostbot",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "AVteamPostBot.js",
   "scripts": {
-    "start": "nodemon index.js"
+    "start": "node AVteamPostBot.js"
   },
   "author": "",
   "license": "ISC",
