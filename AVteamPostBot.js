@@ -105,6 +105,10 @@ app.get('/postback', async (req, res) => {
             payout
         } = req.query;
 
+        if (postData.status !== 'sale' && postData.status !== 'first_dep') {
+            return res.status(200).send('Postback received, but status not relevant');
+        }
+
         if (affiliateNetworkMapping[postData.affiliate_network_name]) {
             postData.affiliate_network_name = affiliateNetworkMapping[postData.affiliate_network_name];
         }
