@@ -180,7 +180,7 @@ app.get('/postback', async (req, res) => {
     }
 });
 
-cron.schedule('*/3 * * * *', () => {
+cron.schedule('0 0 * * *', () => {
     console.log('Running resetRevenueCount at 00:00');
     resetRevenueCount();
 });
