@@ -19,7 +19,13 @@ const BuyerModel = sequelize.define(
       type: DataTypes.INTEGER,
       defaultValue: 0,
      
-    }
+    },
+    countFirstdeps: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    
+
 
 });
 module.exports = BuyerModel;
