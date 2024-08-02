@@ -4,7 +4,7 @@
   "description": "",
   "main": "AVteamPostBot.js",
   "scripts": {
-    "start": "node AVteamPostBot.js"
+    "start": "nodemon AVteamPostBot.js"
   },
   "author": "",
   "license": "ISC",
@@ -15,7 +15,10 @@
     "dayjs": "^1.11.11",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "node-cron": "^3.0.3",
     "node-telegram-bot-api": "^0.66.0",
-    "nodemon": "^3.1.4"
+    "nodemon": "^3.1.4",
+    "sequelize": "^6.37.3",
+    "sqlite3": "^5.1.7"
   }
 }

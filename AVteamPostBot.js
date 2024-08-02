@@ -1,33 +1,40 @@
 const express = require('express');
 const TelegramApi = require('node-telegram-bot-api');
 const dayjs = require('dayjs');
-const { default: axios } = require('axios');
-const { Console } = require('console');
+const sequelize = require('./db.js');
+const BuyerModel = require('./models.js');
 require('dotenv').config();
+const cron = require('node-cron');
 
 const app = express();
 const port = 3000;
+
+
+
 
 const token = process.env.TOKEN;
 const ApiKey = process.env.API_KEY;
 const bot = new TelegramApi(token, { polling: true });
 
 const channelAll = '-1002191506094'; // ID канала для всех полученных данных
-const channelPasha = '-1002196076246';// ID канала для новых данных
+const channelPasha = '-1002196076246';
 const channelArtur = '-1002211371353';
 
 const affiliateNetworkMapping = {
-    'Partners #1': 'Cpa bro',
-    'Partners #2': 'Advertise',
-    'Partners #3': '1WIN',
-    'Partners #4': 'Holy Cash',
-    'Partners #5': 'Vpartners',
-    'Partners #6': '4rabet',
-    'Partners #7': 'NSQ',
-    'Partners #8': 'CGS',
-    'Partners #9': 'Play Cash',
-    'Partners #10': '247 Partners',
-
+    'Partners 1': 'Cpa bro',
+    'Partners 2': 'Advertise',
+    'Partners 3': '1WIN',
+    'Partners 4': 'Holy Cash',
+    'Partners 5': 'Vpartners',
+    'Partners 6': '4rabet',
+    'Partners 7': 'NSQ',
+    'Partners 8': 'CGS',
+    'Partners 9': 'Play Cash',
+    'Partners 10': '247 Partners',
+    'Partners 11': 'Monkey Traff',
+    'Partners 12': 'Ami Leads',
+    'Partners 13': 'Tesla Traff',
+    'Partners 14': 'X-partners',
 };
 
 const formatTimestamp = (timestamp) => {
@@ -37,13 +44,13 @@ const formatTimestamp = (timestamp) => {
 const transformOfferName = (offerName) => {
     const parts = offerName.split('|');
     if (parts.length >= 5) {
-        return parts.slice(2, -2).join('|').trim();
+        return parts.slice(2, -2).map(part => part.trim()).join(' ');
     }
     return offerName;
 };
 
 
-const sendToChannelAll = async (data) => {
+const sendToChannelAll = async (data,RatingMessage) => {
     try {
 
         const message = `
@@ -57,6 +64,7 @@ Network: ${data.affiliate_network_name}
 Revenue: ${data.payout}`;
 
         await bot.sendMessage(channelAll, message);
+        await bot.sendMessage(channelAll, RatingMessage);
         console.log("Конверсия успешно отправлена в канал для админов")
     } catch (error) {
         console.log("Ошибка отправи конверсии в канал админов", error)
@@ -64,7 +72,7 @@ Revenue: ${data.payout}`;
 };
 
 
-const sendToChannelNew = async (data, responsiblePerson) => {
+const sendToChannelNew = async (data, responsiblePerson,RatingMessage) => {
 
     try {
         const message = `
@@ -78,9 +86,11 @@ Revenue: ${data.payout}`;
 
         if (responsiblePerson === 'Artur') {
             await bot.sendMessage(channelArtur, message);
+            await bot.sendMessage(channelArtur, RatingMessage);
         }
         if (responsiblePerson === 'Pasha') {
             await bot.sendMessage(channelPasha, message);
+            await bot.sendMessage(channelPasha, RatingMessage);
         }
 
 
@@ -90,9 +100,44 @@ Revenue: ${data.payout}`;
     }
 }
 
+const sendRatingMessage = async (postData, responsiblePerson) => {
+    try {
+        const [buyer, created] = await BuyerModel.findOrCreate({
+            where: { nameBuyer: responsiblePerson },
+            defaults: { nameBuyer: responsiblePerson, countRevenue: postData.payout }
+        });
+
+        if (!created) {
+            buyer.countRevenue += postData.payout;
+            await buyer.save();
+        }
+
+        const buyers = await BuyerModel.findAll({
+            order: [['countRevenue', 'DESC']]
+        });
+
+        const message = 'Buyers:\n' + buyers.map(b => `${b.nameBuyer} => ${b.countRevenue}`).join('\n');
+        return message  
+    } catch (error) {
+        console.log("Ошибка в отправке сообщения с рейтингом \n" + error)
+    }
+
+};
+
+const resetRevenueCount = async () => {
+    try {
+        await BuyerModel.update({ countRevenue: 0 }, { where: {} });
+        console.log('Счетчики выплат сброшены');
+    } catch (error) {
+        console.error('Error resetting count revenue:', error);
+    }
+};
+
+
 
 app.get('/postback', async (req, res) => {
-    try {
+
+ try {
 
         const postData = {
             clickid,
@@ -104,6 +149,7 @@ app.get('/postback', async (req, res) => {
             affiliate_network_name,
             payout
         } = req.query;
+        console.log(req.query)
 
         if (postData.status !== 'sale' && postData.status !== 'first_dep') {
             return res.status(200).send('Postback received, but status not relevant');
@@ -113,22 +159,19 @@ app.get('/postback', async (req, res) => {
             postData.affiliate_network_name = affiliateNetworkMapping[postData.affiliate_network_name];
         }
 
+        
+        postData.payout = Math.floor(parseFloat(postData.payout));
         postData.offer_name = transformOfferName(postData.offer_name);
 
         const offerParts = postData.campaign_name.split('|');
         const responsiblePerson = offerParts[offerParts.length - 1].trim();
-      
 
-        // const response = await axios.get(`https://silktraff.com/public/api/v1/conversion/${postData.clickid}`, {
-        //     headers: {
-        //         'api-key': ApiKey,
 
-        //     }
-        // })
-
-    
-        await sendToChannelNew(postData, responsiblePerson);
-        await sendToChannelAll(postData);
+        const RatingMessage = await sendRatingMessage(postData, responsiblePerson)
+        await sendToChannelNew(postData, responsiblePerson,RatingMessage);
+        await sendToChannelAll(postData,RatingMessage);
+       
+        
 
         res.status(200).send('Postback received');
     } catch (error) {
@@ -137,7 +180,23 @@ app.get('/postback', async (req, res) => {
     }
 });
 
-
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+cron.schedule('*/3 * * * *', () => {
+    console.log('Running resetRevenueCount at 00:00');
+    resetRevenueCount();
 });
+
+const startServer = async () => {
+    try {
+        await sequelize.authenticate();
+        await sequelize.sync();
+        console.log('Connected to database...');
+        
+        app.listen(port, () => {
+            console.log(`Server is running on port ${port}`);
+        });
+    } catch (error) {
+        console.error('Отсутствует подключение к БД', error);
+    }
+};
+
+startServer();
