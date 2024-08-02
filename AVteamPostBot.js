@@ -86,11 +86,11 @@ Revenue: ${data.payout}`;
 
         if (responsiblePerson === 'Artur') {
             await bot.sendMessage(channelArtur, message);
-            await bot.sendMessage(channelArtur, RatingMessage);
+            await bot.sendMessage(channelAll, RatingMessage);
         }
         if (responsiblePerson === 'Pasha') {
             await bot.sendMessage(channelPasha, message);
-            await bot.sendMessage(channelPasha, RatingMessage);
+            await bot.sendMessage(channelAll, RatingMessage);
         }
 
 
@@ -104,11 +104,12 @@ const sendRatingMessage = async (postData, responsiblePerson) => {
     try {
         const [buyer, created] = await BuyerModel.findOrCreate({
             where: { nameBuyer: responsiblePerson },
-            defaults: { nameBuyer: responsiblePerson, countRevenue: postData.payout }
+            defaults: { nameBuyer: responsiblePerson, countRevenue: postData.payout, countFirstdeps:1}
         });
 
         if (!created) {
             buyer.countRevenue += postData.payout;
+            buyer.countFirstdeps +=1;
             await buyer.save();
         }
 
@@ -116,7 +117,7 @@ const sendRatingMessage = async (postData, responsiblePerson) => {
             order: [['countRevenue', 'DESC']]
         });
 
-        const message = 'Buyers:\n' + buyers.map(b => `${b.nameBuyer} => ${b.countRevenue}`).join('\n');
+        const message = 'Buyers:\n' + buyers.map(b => `${b.nameBuyer} => ${b.countRevenue}/${b.countFirstdeps}`).join('\n');
         return message  
     } catch (error) {
         console.log("Ошибка в отправке сообщения с рейтингом \n" + error)
@@ -126,7 +127,7 @@ const sendRatingMessage = async (postData, responsiblePerson) => {
 
 const resetRevenueCount = async () => {
     try {
-        await BuyerModel.update({ countRevenue: 0 }, { where: {} });
+        await BuyerModel.update({ countRevenue: 0, countFirstdeps:0 }, { where: {} });
         console.log('Счетчики выплат сброшены');
     } catch (error) {
         console.error('Error resetting count revenue:', error);
