@@ -4,7 +4,7 @@
   "description": "",
   "main": "AVteamPostBot.js",
   "scripts": {
-    "start": "nodemon AVteamPostBot.js"
+    "start": "node AVteamPostBot.js"
   },
   "author": "",
   "license": "ISC",
