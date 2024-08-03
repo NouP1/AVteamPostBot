@@ -182,7 +182,7 @@ app.get('/postback', async (req, res) => {
     }
 });
 
-cron.schedule('0 5 15 * * *', () => {
+cron.schedule('0 0 21 * * *', () => {
     const now = moment().format('YYYY-MM-DD HH:mm:ss')
     console.log('Running resetRevenueCount at 00:00');
     resetRevenueCount();
