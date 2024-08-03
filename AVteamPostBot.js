@@ -5,6 +5,7 @@ const sequelize = require('./db.js');
 const BuyerModel = require('./models.js');
 require('dotenv').config();
 const cron = require('node-cron');
+const moment = require('moment');
 
 const app = express();
 const port = 3000;
@@ -181,9 +182,11 @@ app.get('/postback', async (req, res) => {
     }
 });
 
-cron.schedule('0 0 * * *', () => {
+cron.schedule('*/1 * * * *', () => {
+    const now = moment().format('YYYY-MM-DD HH:mm:ss')
     console.log('Running resetRevenueCount at 00:00');
     resetRevenueCount();
+    console.log(now +'\n----------------------------------------------------------------');
 });
 
 const startServer = async () => {
