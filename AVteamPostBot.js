@@ -87,11 +87,11 @@ Revenue: ${data.payout}`;
 
         if (responsiblePerson === 'Artur') {
             await bot.sendMessage(channelArtur, message);
-            await bot.sendMessage(channelAll, RatingMessage);
+            //await bot.sendMessage(channelAll, RatingMessage);
         }
         if (responsiblePerson === 'Pasha') {
             await bot.sendMessage(channelPasha, message);
-            await bot.sendMessage(channelAll, RatingMessage);
+            //await bot.sendMessage(channelAll, RatingMessage);
         }
 
 
