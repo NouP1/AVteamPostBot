@@ -17,9 +17,9 @@ const token = process.env.TOKEN;
 const ApiKey = process.env.API_KEY;
 const bot = new TelegramApi(token, { polling: true });
 
-const channelAll = '-1002191506094'; // ID канала для всех полученных данных
-const channelPasha = '-1002196076246';
-const channelArtur = '-1002211371353';
+const channelAll = '-1002164350760'; // ID канала для всех полученных данных
+const channelPasha = '-1002163208194';
+const channelArtur = '-1002247205947';
 
 const affiliateNetworkMapping = {
     'Partners 1': 'Cpa bro',
@@ -62,10 +62,14 @@ App: ${data.campaign_name}
 GEO: ${data.country}
 Offer: ${data.offer_name}
 Network: ${data.affiliate_network_name}
-Revenue: ${data.payout}`;
+Revenue: ${data.payout}
+
+${RatingMessage}
+
+`;
 
         await bot.sendMessage(channelAll, message);
-        await bot.sendMessage(channelAll, RatingMessage);
+        //await bot.sendMessage(channelAll, RatingMessage);
         console.log("Конверсия успешно отправлена в канал для админов")
     } catch (error) {
         console.log("Ошибка отправи конверсии в канал админов", error)
@@ -97,7 +101,7 @@ Revenue: ${data.payout}`;
 
         console.log("Конверсия успешно отправлена в канал для команды")
     } catch (error) {
-        console.log("Ошибка отправи конверсии в канал команды", error)
+        console.log("Ошибка отправки конверсии в канал команды", error)
     }
 }
 
@@ -118,7 +122,7 @@ const sendRatingMessage = async (postData, responsiblePerson) => {
             order: [['countRevenue', 'DESC']]
         });
 
-        const message = 'Buyers:\n' + buyers.map(b => `${b.nameBuyer} => ${b.countRevenue}/${b.countFirstdeps}`).join('\n');
+        const message = 'Buyers:\n' + buyers.map(b => `${b.nameBuyer} => $${b.countRevenue} / FD ${b.countFirstdeps}`).join('\n');
         return message  
     } catch (error) {
         console.log("Ошибка в отправке сообщения с рейтингом \n" + error)
