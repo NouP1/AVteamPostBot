@@ -36,6 +36,8 @@ const affiliateNetworkMapping = {
     'Partners 12': 'Ami Leads',
     'Partners 13': 'Tesla Traff',
     'Partners 14': 'X-partners',
+    'Partners 15': '3snet',
+    'Partners 16': 'Chillipartners2'
 };
 
 const formatTimestamp = (timestamp) => {
