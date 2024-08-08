@@ -12,6 +12,7 @@
     "@elastic/elasticsearch": "^8.14.0",
     "axios": "^1.7.2",
     "body-parser": "^1.20.2",
+    "bull": "^4.16.0",
     "dayjs": "^1.11.11",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
@@ -19,6 +20,7 @@
     "node-cron": "^3.0.3",
     "node-telegram-bot-api": "^0.66.0",
     "nodemon": "^3.1.4",
+    "redis": "^4.7.0",
     "sequelize": "^6.37.3",
     "sqlite3": "^5.1.7"
   }
