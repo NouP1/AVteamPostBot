@@ -10,9 +10,6 @@ const moment = require('moment');
 const app = express();
 const port = 3000;
 
-
-
-
 const token = process.env.TOKEN;
 const ApiKey = process.env.API_KEY;
 const bot = new TelegramApi(token, { polling: true });
@@ -143,10 +140,54 @@ const resetRevenueCount = async () => {
 
 
 
+const postbackQueue = [];
+let isProcessing = false; // Флаг, указывающий на то, идет ли в данный момент обработка очереди
+
+// Функция для обработки данных постбека
+const processPostback = async (postData) => {
+    try {
+        if (postData.status !== 'sale' && postData.status !== 'first_dep') {
+            return 'Postback received, but status not relevant';
+        }
+
+        if (affiliateNetworkMapping[postData.affiliate_network_name]) {
+            postData.affiliate_network_name = affiliateNetworkMapping[postData.affiliate_network_name];
+        }
+
+        postData.payout = Math.floor(parseFloat(postData.payout));
+        postData.offer_name = transformOfferName(postData.offer_name);
+
+        const offerParts = postData.campaign_name.split('|');
+        const responsiblePerson = offerParts[offerParts.length - 1].trim();
+
+        const RatingMessage = await sendRatingMessage(postData, responsiblePerson);
+        await sendToChannelNew(postData, responsiblePerson, RatingMessage);
+        await sendToChannelAll(postData, RatingMessage);
+
+        return 'Postback processed';
+    } catch (error) {
+        console.error('Ошибка обработки postback:', error);
+        throw new Error('Internal Server Error');
+    }
+};
+
+// Функция для обработки очереди постбеков
+const processQueue = async () => {
+    if (isProcessing) return; // Если уже идет обработка, выходим
+    isProcessing = true; // Устанавливаем флаг обработки
+
+    while (postbackQueue.length > 0) {
+        const postData = postbackQueue.shift(); // Извлекаем первый элемент из очереди
+        await processPostback(postData); // Обрабатываем постбек
+        await new Promise(resolve => setTimeout(resolve, 4000)); // Задержка в 4 секунды
+    }
+
+    isProcessing = false; // Сбрасываем флаг после завершения обработки
+};
+
+// Эндпоинт для добавления постбеков в очередь
 app.get('/postback', async (req, res) => {
-
- try {
-
+    try {
         const postData = {
             clickid,
             date,
@@ -159,35 +200,20 @@ app.get('/postback', async (req, res) => {
         } = req.query;
         console.log(req.query)
 
-        if (postData.status !== 'sale' && postData.status !== 'first_dep') {
-            return res.status(200).send('Postback received, but status not relevant');
-        }
+        // Добавление задачи в очередь
+        postbackQueue.push(postData);
 
-        if (affiliateNetworkMapping[postData.affiliate_network_name]) {
-            postData.affiliate_network_name = affiliateNetworkMapping[postData.affiliate_network_name];
-        }
+        // Запускаем обработку очереди, если она не запущена
+        if (!isProcessing) {
+            processQueue();
+        } 
 
-        
-        postData.payout = Math.floor(parseFloat(postData.payout));
-        postData.offer_name = transformOfferName(postData.offer_name);
-
-        const offerParts = postData.campaign_name.split('|');
-        const responsiblePerson = offerParts[offerParts.length - 1].trim();
-
-
-        const RatingMessage = await sendRatingMessage(postData, responsiblePerson)
-        await sendToChannelNew(postData, responsiblePerson,RatingMessage);
-        await sendToChannelAll(postData,RatingMessage);
-       
-        
-
-        res.status(200).send('Postback received');
+        res.status(200).send('Postback получен и добавлен в очередь');
     } catch (error) {
-        console.error('Error processing postback:', error);
+        console.error('Ошибка добавления postback в очередь:', error);
         res.status(500).send('Internal Server Error');
     }
 });
-
 cron.schedule('0 21 * * *', () => {
     const now = moment().format('YYYY-MM-DD HH:mm:ss')
     console.log('Running resetRevenueCount at 00:00');
