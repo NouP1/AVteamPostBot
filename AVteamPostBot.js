@@ -132,7 +132,7 @@ const sendRatingMessage = async (postData, responsiblePerson) => {
 
 const resetRevenueCount = async () => {
     try {
-        await BuyerModel.update({ countRevenue: 0, countFirstdeps:0 }, { where: {} });
+        await BuyerModel.destroy({ where: {} });
         console.log('Счетчики выплат сброшены');
     } catch (error) {
         console.error('Error resetting count revenue:', error);
