@@ -35,7 +35,8 @@ const affiliateNetworkMapping = {
     'Partners 14': 'X-partners',
     'Partners 15': '3snet',
     'Partners 16': 'Chillipartners2',
-    'Partners 17': 'Lgaming'
+    'Partners 17': 'Lgaming',
+    'Partners 18': 'Cpa Rocks',
 };
 
 const formatTimestamp = (timestamp) => {
