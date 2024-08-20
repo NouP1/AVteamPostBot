@@ -6,6 +6,7 @@ const BuyerModel = require('./models.js');
 require('dotenv').config();
 const cron = require('node-cron');
 const moment = require('moment');
+const axios = require('axios')
 
 const app = express();
 const port = 3000;
@@ -37,6 +38,8 @@ const affiliateNetworkMapping = {
     'Partners 16': 'Chillipartners2',
     'Partners 17': 'Lgaming',
     'Partners 18': 'Cpa Rocks',
+    'Partners 19': 'Glory Partners',
+    'Partners 20': 'Royal Partners',
 };
 
 const formatTimestamp = (timestamp) => {
@@ -129,7 +132,7 @@ const sendRatingMessage = async (postData, responsiblePerson) => {
         console.log("Ошибка в отправке сообщения с рейтингом \n" + error)
     }
 
-};
+}; 
 
 const resetRevenueCount = async () => {
     try {
@@ -165,6 +168,8 @@ const processPostback = async (postData) => {
         const RatingMessage = await sendRatingMessage(postData, responsiblePerson);
         await sendToChannelNew(postData, responsiblePerson, RatingMessage);
         await sendToChannelAll(postData, RatingMessage);
+        // await axios.post('http://localhost:3100/webhook/postback', postData);
+ 
 
         return 'Postback processed';
     } catch (error) {
@@ -187,7 +192,7 @@ const processQueue = async () => {
     isProcessing = false; // Сбрасываем флаг после завершения обработки
 };
 
-// Эндпоинт для добавления постбеков в очередь
+
 app.get('/postback', async (req, res) => {
     try {
         const postData = {
