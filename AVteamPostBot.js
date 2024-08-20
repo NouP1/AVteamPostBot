@@ -40,6 +40,8 @@ const affiliateNetworkMapping = {
     'Partners 18': 'Cpa Rocks',
     'Partners 19': 'Glory Partners',
     'Partners 20': 'Royal Partners',
+    'Partners 21': 'Pin-up',
+    'Partners 22': 'Traffi Cake'
 };
 
 const formatTimestamp = (timestamp) => {
@@ -168,7 +170,7 @@ const processPostback = async (postData) => {
         const RatingMessage = await sendRatingMessage(postData, responsiblePerson);
         await sendToChannelNew(postData, responsiblePerson, RatingMessage);
         await sendToChannelAll(postData, RatingMessage);
-        // await axios.post('http://localhost:3100/webhook/postback', postData);
+        //await axios.post('http://localhost:3100/webhook/postback', postData);
  
 
         return 'Postback processed';
