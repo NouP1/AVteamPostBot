@@ -170,7 +170,7 @@ const processPostback = async (postData) => {
         const RatingMessage = await sendRatingMessage(postData, responsiblePerson);
         await sendToChannelNew(postData, responsiblePerson, RatingMessage);
         await sendToChannelAll(postData, RatingMessage);
-        await axios.post('/api/webhook/postback', postData);
+        await axios.post('http://185.81.115.100:3100/api/webhook/postback', postData);
  
 
         return 'Postback processed';
