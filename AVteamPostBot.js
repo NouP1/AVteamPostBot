@@ -41,7 +41,9 @@ const affiliateNetworkMapping = {
     'Partners 19': 'Glory Partners',
     'Partners 20': 'Royal Partners',
     'Partners 21': 'Pin-up',
-    'Partners 22': 'Traffi Cake'
+    'Partners 22': 'Traffi Cake',
+    'Partners 23': 'MoonStar',
+    'Partners 24': 'Vortex'
 };
 
 const formatTimestamp = (timestamp) => {
