@@ -170,11 +170,17 @@ const processPostback = async (postData) => {
         const responsiblePerson = offerParts[offerParts.length - 1].trim();
 
         const RatingMessage = await sendRatingMessage(postData, responsiblePerson);
-        await sendToChannelNew(postData, responsiblePerson, RatingMessage);
-        await sendToChannelAll(postData, RatingMessage);
-        await axios.post('http://185.81.115.100:3100/api/webhook/postback', postData);
- 
-
+        await Promise.allSettled([
+            sendToChannelNew(postData, responsiblePerson, RatingMessage),
+            sendToChannelAll(postData, RatingMessage),
+            (async () => {
+                try {
+                    await axios.post('http://185.81.115.100:3100/api/webhook/postback', postData);
+                } catch (error) {
+                    console.error('Ошибка отправки на внешний сервер:', error);
+                }
+            })()
+        ]);
         return 'Postback processed';
     } catch (error) {
         console.error('Ошибка обработки postback:', error);
