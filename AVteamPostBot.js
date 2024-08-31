@@ -45,7 +45,10 @@ const affiliateNetworkMapping = {
     'Partners 23': 'MoonStar',
     'Partners 24': 'Vortex',
     'Partners 25': '1xBet',
-    'Partners 26': 'Alfaleads'
+    'Partners 26': 'Alfaleads',
+    'Partners 27': 'OnePartners'
+
+    
 };
 
 const formatTimestamp = (timestamp) => {
