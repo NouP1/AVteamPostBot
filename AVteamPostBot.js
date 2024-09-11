@@ -2,24 +2,21 @@ const express = require('express');
 const TelegramApi = require('node-telegram-bot-api');
 const dayjs = require('dayjs');
 const sequelize = require('./db.js');
-<<<<<<< HEAD
+
 const BuyerModel = require('./models/Buyer.js');
 const CapModel = require('./models/Cap.js');
-=======
-const BuyerModel = require('./models.js');
->>>>>>> 8717865cfe28eb4546d4f04eadf0363e37e9df95
+
 require('dotenv').config();
 const cron = require('node-cron');
 const moment = require('moment');
 const axios = require('axios')
-<<<<<<< HEAD
+
 const { auth } = require('google-auth-library');
 const { google } = require('googleapis');
 const serviceAccount = require('./googleapikey.json');
 
 
-=======
->>>>>>> 8717865cfe28eb4546d4f04eadf0363e37e9df95
+
 
 const app = express();
 app.use(express.json());
@@ -61,11 +58,9 @@ const affiliateNetworkMapping = {
     'Partners 24': 'Vortex',
     'Partners 25': '1xBet',
     'Partners 26': 'Alfaleads',
-    'Partners 27': 'OnePartners'
-<<<<<<< HEAD
+    'Partners 27': 'OnePartners',
+    
 
-=======
->>>>>>> 8717865cfe28eb4546d4f04eadf0363e37e9df95
 
     
 };
@@ -83,11 +78,7 @@ const transformOfferName = (offerName) => {
 };
 
 
-<<<<<<< HEAD
 const sendToChannelAll = async (data, RatingMessage,networkCaps) => {
-=======
-const sendToChannelAll = async (data,RatingMessage) => {
->>>>>>> 8717865cfe28eb4546d4f04eadf0363e37e9df95
     try {
 
         const message = `
@@ -101,10 +92,7 @@ Network: ${data.affiliate_network_name}
 Revenue: ${data.payout}
 
 ${RatingMessage}
-<<<<<<< HEAD
 Cap:${networkCaps.fullcap}/${networkCaps.countCap}
-=======
->>>>>>> 8717865cfe28eb4546d4f04eadf0363e37e9df95
 
 `;
 
@@ -117,11 +105,7 @@ Cap:${networkCaps.fullcap}/${networkCaps.countCap}
 };
 
 
-<<<<<<< HEAD
 const sendToChannelNew = async (data, responsiblePerson, RatingMessage, networkCaps) => {
-=======
-const sendToChannelNew = async (data, responsiblePerson,RatingMessage) => {
->>>>>>> 8717865cfe28eb4546d4f04eadf0363e37e9df95
 
     try {
         const message = `
@@ -148,7 +132,6 @@ Cap:${networkCaps.fullcap}/${networkCaps.countCap}
         console.log("-------------------------------------------------")
     } catch (error) {
         console.log("Ошибка отправки конверсии в канал команды", error)
-<<<<<<< HEAD
     }
 }
 
@@ -177,14 +160,7 @@ const formatedRatingMessage = async (postData, responsiblePerson) => {
 
 };
 
-const resetRevenueCount = async () => {
-    try {
-        await BuyerModel.destroy({ where: {} });
-        console.log('Счетчики выплат сброшены');
-    } catch (error) {
-        console.error('Error resetting count revenue:', error);
-    }
-};
+
 
 
 async function getNetworkCap(networkName) {
@@ -253,35 +229,10 @@ async function getNetworkCap(networkName) {
     } catch (error) {
         console.error('Error getting sheet data:', error);
         throw error;  // Перебрасываем ошибку для обработки на более высоком уровне
-=======
->>>>>>> 8717865cfe28eb4546d4f04eadf0363e37e9df95
     }
 }
 
-const sendRatingMessage = async (postData, responsiblePerson) => {
-    try {
-        const [buyer, created] = await BuyerModel.findOrCreate({
-            where: { nameBuyer: responsiblePerson },
-            defaults: { nameBuyer: responsiblePerson, countRevenue: postData.payout, countFirstdeps:1}
-        });
 
-        if (!created) {
-            buyer.countRevenue += postData.payout;
-            buyer.countFirstdeps +=1;
-            await buyer.save();
-        }
-
-        const buyers = await BuyerModel.findAll({
-            order: [['countRevenue', 'DESC']]
-        });
-
-        const message = 'Buyers:\n' + buyers.map(b => `${b.nameBuyer} => $${b.countRevenue} / FD ${b.countFirstdeps}`).join('\n');
-        return message  
-    } catch (error) {
-        console.log("Ошибка в отправке сообщения с рейтингом \n" + error)
-    }
-
-}; 
 
 const resetRevenueCount = async () => {
     try {
@@ -291,62 +242,6 @@ const resetRevenueCount = async () => {
         console.error('Error resetting count revenue:', error);
     }
 };
-
-
-
-const postbackQueue = [];
-let isProcessing = false; // Флаг, указывающий на то, идет ли в данный момент обработка очереди
-
-// Функция для обработки данных постбека
-const processPostback = async (postData) => {
-    try {
-        if (postData.status !== 'sale' && postData.status !== 'first_dep') {
-            return 'Postback received, but status not relevant';
-        }
-
-        if (affiliateNetworkMapping[postData.affiliate_network_name]) {
-            postData.affiliate_network_name = affiliateNetworkMapping[postData.affiliate_network_name];
-        }
-
-        postData.payout = Math.floor(parseFloat(postData.payout));
-        postData.offer_name = transformOfferName(postData.offer_name);
-
-        const offerParts = postData.campaign_name.split('|');
-        const responsiblePerson = offerParts[offerParts.length - 1].trim();
-
-        const RatingMessage = await sendRatingMessage(postData, responsiblePerson);
-        await Promise.allSettled([
-            sendToChannelNew(postData, responsiblePerson, RatingMessage),
-            sendToChannelAll(postData, RatingMessage),
-            (async () => {
-                try {
-                    await axios.post('http://185.81.115.100:3100/api/webhook/postback', postData);
-                } catch (error) {
-                    console.error('Ошибка отправки на внешний сервер:', error);
-                }
-            })()
-        ]);
-        return 'Postback processed';
-    } catch (error) {
-        console.error('Ошибка обработки postback:', error);
-        throw new Error('Internal Server Error');
-    }
-};
-
-// Функция для обработки очереди постбеков
-const processQueue = async () => {
-    if (isProcessing) return; // Если уже идет обработка, выходим
-    isProcessing = true; // Устанавливаем флаг обработки
-
-    while (postbackQueue.length > 0) {
-        const postData = postbackQueue.shift(); // Извлекаем первый элемент из очереди
-        await processPostback(postData); // Обрабатываем постбек
-        await new Promise(resolve => setTimeout(resolve, 4000)); // Задержка в 4 секунды
-    }
-
-    isProcessing = false; // Сбрасываем флаг после завершения обработки
-};
-
 
 
 
@@ -422,21 +317,12 @@ app.get('/postback', async (req, res) => {
 
         // Добавление задачи в очередь
         postbackQueue.push(postData);
-<<<<<<< HEAD
 
         // Запускаем обработку очереди, если она не запущена
         if (!isProcessing) {
             processQueue();
         }
 
-=======
-
-        // Запускаем обработку очереди, если она не запущена
-        if (!isProcessing) {
-            processQueue();
-        } 
-
->>>>>>> 8717865cfe28eb4546d4f04eadf0363e37e9df95
         res.status(200).send('Postback получен и добавлен в очередь');
     } catch (error) {
         console.error('Ошибка добавления postback в очередь:', error);
@@ -447,7 +333,6 @@ cron.schedule('0 21 * * *', () => {
     const now = moment().format('YYYY-MM-DD HH:mm:ss')
     console.log('Running resetRevenueCount at 00:00');
     resetRevenueCount();
-<<<<<<< HEAD
     console.log(now + '\n-------------------------------------------------');
 });
 
@@ -492,23 +377,4 @@ const startServer = async () => {
     }
 };
 
-=======
-    console.log(now +'\n----------------------------------------------------------------');
-});
-
-const startServer = async () => {
-    try {
-        await sequelize.authenticate();
-        await sequelize.sync();
-        console.log('Connected to database...');
-        
-        app.listen(port, () => {
-            console.log(`Server is running on port ${port}`);
-        });
-    } catch (error) {
-        console.error('Отсутствует подключение к БД', error);
-    }
-};
-
->>>>>>> 8717865cfe28eb4546d4f04eadf0363e37e9df95
 startServer();
