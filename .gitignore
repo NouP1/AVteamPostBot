@@ -1,4 +1,4 @@
 .env
 buyers.db
-node_modules/
+node_modules
 googleapikey.json
