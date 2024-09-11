@@ -1,4 +1,8 @@
 .env
 buyers.db
+<<<<<<< HEAD
 node_modules/
 googleapikey.json
+=======
+node_modules
+>>>>>>> 8717865cfe28eb4546d4f04eadf0363e37e9df95
