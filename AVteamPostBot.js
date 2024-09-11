@@ -59,7 +59,7 @@ const affiliateNetworkMapping = {
     'Partners 25': '1xBet',
     'Partners 26': 'Alfaleads',
     'Partners 27': 'OnePartners',
-    
+
 
 
     
@@ -92,7 +92,7 @@ Network: ${data.affiliate_network_name}
 Revenue: ${data.payout}
 
 ${RatingMessage}
-Cap:${networkCaps.fullcap}/${networkCaps.countCap}
+Cap:${networkCaps.fullCap}/${networkCaps.countCap}
 
 `;
 
@@ -165,7 +165,6 @@ const formatedRatingMessage = async (postData, responsiblePerson) => {
 
 async function getNetworkCap(networkName) {
     try {
-
         const authClient = auth.fromJSON(serviceAccount);
         authClient.scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
         await authClient.authorize();
@@ -194,41 +193,49 @@ async function getNetworkCap(networkName) {
             const rows = response.data.values;
 
             if (rows && rows.length > 0) {
-
                 const networksRow = rows.find(row => row[0] === networkName);
 
-                const [cap, created] = await CapModel.findOrCreate({
-                    where: { nameCap: networkName },
-                    defaults: { nameCap: networksRow[0] || 0, countCap: networksRow[1] || 0, fullCap: networksRow[1] }
-                });
+                if (networksRow) {
+                    // Ищем запись в БД по партнёрке
+                    let cap = await CapModel.findOne({ where: { nameCap: networkName } });
 
-                if (!created) {
-                    cap.countCap -= 1;
-                    cap.fullCap = networksRow[1]
-                    await cap.save();
+                    if (!cap) {
+                        
+                        // Если записи нет, создаём её
+                        cap = await CapModel.create({
+                            nameCap: networksRow[0],
+                            countCap: networksRow[1] - 1,  // Уменьшаем на 1
+                            fullCap: networksRow[1]
+                        });
+                    } else {
+                        // Если запись есть, обновляем countCap и fullCap
+                        cap.countCap -= 1;
+                        cap.fullCap = networksRow[1];
 
-                    if (cap.countCap < 0 || cap.countCap===undefined || cap.fullCap ===undefined) {
-                        await cap.update({countCap:0,fullCap:0})
+                        // Если countCap меньше 0 или неопределён, сбрасываем его на 0
+                        if (cap.countCap < 0 || cap.countCap === undefined || cap.fullCap === undefined) {
+                            cap.countCap = 0;
+                            
+                        }
+
+                        await cap.save();
                     }
 
-                   
-
-                    let ojectCap = {
+                    // Возвращаем объект с информацией о Cap
+                    return {
                         countCap: cap.countCap,
-                        fullcap: cap.fullCap
-                    }
-                    return ojectCap;
+                        fullCap: cap.fullCap
+                    };
                 }
             }
         }
 
-
-        // Если ничего не найдено ни в одном листе
+        // Если данные не найдены в Google Sheets
         throw new Error(`Данные для ${networkName} не найдены.`);
 
     } catch (error) {
         console.error('Error getting sheet data:', error);
-        throw error;  // Перебрасываем ошибку для обработки на более высоком уровне
+        throw error;
     }
 }
 
@@ -273,7 +280,7 @@ const processPostback = async (postData) => {
             sendToChannelAll(postData, RatingMessage,networkCaps),
             (async () => {
                 try {
-                    await axios.post('http://185.81.115.100:3100/api/webhook/postback', postData);
+                    await axios.post('http://185.81.115.100/:3100/api/webhook/postback', postData);
                 } catch (error) {
                     console.error('Ошибка отправки на внешний сервер:', error);
                 }
@@ -368,7 +375,8 @@ const startServer = async () => {
         await sequelize.authenticate();
         await sequelize.sync();
         console.log('Connected to database...');
-    
+    const Test = await getNetworkCap('Test')
+    console.log(Test.countCap,Test.fullCap)
         app.listen(port, () => {
             console.log(`Server is running on port ${port}`);
         });
