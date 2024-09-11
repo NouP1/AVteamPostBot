@@ -89,10 +89,11 @@ App: ${data.campaign_name}
 GEO: ${data.country}
 Offer: ${data.offer_name}
 Network: ${data.affiliate_network_name}
+Cap:${networkCaps.fullCap}/${networkCaps.countCap}
 Revenue: ${data.payout}
 
 ${RatingMessage}
-Cap:${networkCaps.fullCap}/${networkCaps.countCap}
+
 
 `;
 
@@ -116,7 +117,7 @@ App: ${data.campaign_name}
 GEO: ${data.country}
 Offer: ${data.offer_name}
 Revenue: ${data.payout};
-Cap:${networkCaps.fullcap}/${networkCaps.countCap}
+Cap:${networkCaps.fullCap}/${networkCaps.countCap}
 `
         if (responsiblePerson === 'Artur') {
             await bot.sendMessage(channelArtur, message);
