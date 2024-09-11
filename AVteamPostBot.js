@@ -2,17 +2,25 @@ const express = require('express');
 const TelegramApi = require('node-telegram-bot-api');
 const dayjs = require('dayjs');
 const sequelize = require('./db.js');
-const BuyerModel = require('./models.js');
+const BuyerModel = require('./models/Buyer.js');
+const CapModel = require('./models/Cap.js');
 require('dotenv').config();
 const cron = require('node-cron');
 const moment = require('moment');
 const axios = require('axios')
+const { auth } = require('google-auth-library');
+const { google } = require('googleapis');
+const serviceAccount = require('./googleapikey.json');
+
+
 
 const app = express();
+app.use(express.json());
 const port = 3000;
 
 const token = process.env.TOKEN;
 const ApiKey = process.env.API_KEY;
+const spreadsheetId = process.env.SPREADSHEETID;
 const bot = new TelegramApi(token, { polling: true });
 
 const channelAll = '-1002191506094'; // ID канала для всех полученных данных
@@ -48,7 +56,7 @@ const affiliateNetworkMapping = {
     'Partners 26': 'Alfaleads',
     'Partners 27': 'OnePartners'
 
-    
+
 };
 
 const formatTimestamp = (timestamp) => {
@@ -64,7 +72,7 @@ const transformOfferName = (offerName) => {
 };
 
 
-const sendToChannelAll = async (data,RatingMessage) => {
+const sendToChannelAll = async (data, RatingMessage,networkCaps) => {
     try {
 
         const message = `
@@ -78,6 +86,7 @@ Network: ${data.affiliate_network_name}
 Revenue: ${data.payout}
 
 ${RatingMessage}
+Cap:${networkCaps.fullcap}/${networkCaps.countCap}
 
 `;
 
@@ -90,7 +99,7 @@ ${RatingMessage}
 };
 
 
-const sendToChannelNew = async (data, responsiblePerson,RatingMessage) => {
+const sendToChannelNew = async (data, responsiblePerson, RatingMessage, networkCaps) => {
 
     try {
         const message = `
@@ -100,8 +109,9 @@ Time: ${formatTimestamp(data.time)}
 App: ${data.campaign_name}
 GEO: ${data.country}
 Offer: ${data.offer_name}
-Revenue: ${data.payout}`;
-
+Revenue: ${data.payout};
+Cap:${networkCaps.fullcap}/${networkCaps.countCap}
+`
         if (responsiblePerson === 'Artur') {
             await bot.sendMessage(channelArtur, message);
             //await bot.sendMessage(channelAll, RatingMessage);
@@ -113,21 +123,22 @@ Revenue: ${data.payout}`;
 
 
         console.log("Конверсия успешно отправлена в канал для команды")
+        console.log("-------------------------------------------------")
     } catch (error) {
         console.log("Ошибка отправки конверсии в канал команды", error)
     }
 }
 
-const sendRatingMessage = async (postData, responsiblePerson) => {
+const formatedRatingMessage = async (postData, responsiblePerson) => {
     try {
         const [buyer, created] = await BuyerModel.findOrCreate({
             where: { nameBuyer: responsiblePerson },
-            defaults: { nameBuyer: responsiblePerson, countRevenue: postData.payout, countFirstdeps:1}
+            defaults: { nameBuyer: responsiblePerson, countRevenue: postData.payout, countFirstdeps: 1 }
         });
 
         if (!created) {
             buyer.countRevenue += postData.payout;
-            buyer.countFirstdeps +=1;
+            buyer.countFirstdeps += 1;
             await buyer.save();
         }
 
@@ -136,12 +147,12 @@ const sendRatingMessage = async (postData, responsiblePerson) => {
         });
 
         const message = 'Buyers:\n' + buyers.map(b => `${b.nameBuyer} => $${b.countRevenue} / FD ${b.countFirstdeps}`).join('\n');
-        return message  
+        return message
     } catch (error) {
         console.log("Ошибка в отправке сообщения с рейтингом \n" + error)
     }
 
-}; 
+};
 
 const resetRevenueCount = async () => {
     try {
@@ -151,6 +162,77 @@ const resetRevenueCount = async () => {
         console.error('Error resetting count revenue:', error);
     }
 };
+
+
+async function getNetworkCap(networkName) {
+    try {
+
+        const authClient = auth.fromJSON(serviceAccount);
+        authClient.scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
+        await authClient.authorize();
+
+        const sheetsApi = google.sheets({ version: 'v4', auth: authClient });
+
+        // Получаем список всех листов в таблице
+        const sheetsMetadata = await sheetsApi.spreadsheets.get({
+            spreadsheetId: spreadsheetId,
+        });
+
+        const sheets = sheetsMetadata.data.sheets;
+        if (!sheets || sheets.length === 0) {
+            throw new Error('Не удалось найти листы в таблице.');
+        }
+
+        for (const sheet of sheets) {
+            const sheetName = sheet.properties.title;
+
+            // Получаем данные из текущего листа
+            const response = await sheetsApi.spreadsheets.values.get({
+                spreadsheetId: spreadsheetId,
+                range: `${sheetName}!A1:B`,  // Обращаемся к диапазону текущего листа
+            });
+
+            const rows = response.data.values;
+
+            if (rows && rows.length > 0) {
+
+                const networksRow = rows.find(row => row[0] === networkName);
+
+                const [cap, created] = await CapModel.findOrCreate({
+                    where: { nameCap: networkName },
+                    defaults: { nameCap: networksRow[0] || 0, countCap: networksRow[1] || 0, fullCap: networksRow[1] }
+                });
+
+                if (!created) {
+                    cap.countCap -= 1;
+                    cap.fullCap = networksRow[1]
+                    await cap.save();
+
+                    if (cap.countCap < 0 || cap.countCap===undefined || cap.fullCap ===undefined) {
+                        await cap.update({countCap:0,fullCap:0})
+                    }
+
+                   
+
+                    let ojectCap = {
+                        countCap: cap.countCap,
+                        fullcap: cap.fullCap
+                    }
+                    return ojectCap;
+                }
+            }
+        }
+
+
+        // Если ничего не найдено ни в одном листе
+        throw new Error(`Данные для ${networkName} не найдены.`);
+
+    } catch (error) {
+        console.error('Error getting sheet data:', error);
+        throw error;  // Перебрасываем ошибку для обработки на более высоком уровне
+    }
+}
+
 
 
 
@@ -173,11 +255,13 @@ const processPostback = async (postData) => {
 
         const offerParts = postData.campaign_name.split('|');
         const responsiblePerson = offerParts[offerParts.length - 1].trim();
+        const networkCaps = await getNetworkCap(postData.affiliate_network_name)
+        const RatingMessage = await formatedRatingMessage(postData, responsiblePerson);
 
-        const RatingMessage = await sendRatingMessage(postData, responsiblePerson);
+        
         await Promise.allSettled([
-            sendToChannelNew(postData, responsiblePerson, RatingMessage),
-            sendToChannelAll(postData, RatingMessage),
+            sendToChannelNew(postData, responsiblePerson, RatingMessage,networkCaps),
+            sendToChannelAll(postData, RatingMessage,networkCaps),
             (async () => {
                 try {
                     await axios.post('http://185.81.115.100:3100/api/webhook/postback', postData);
@@ -228,7 +312,7 @@ app.get('/postback', async (req, res) => {
         // Запускаем обработку очереди, если она не запущена
         if (!isProcessing) {
             processQueue();
-        } 
+        }
 
         res.status(200).send('Postback получен и добавлен в очередь');
     } catch (error) {
@@ -240,15 +324,42 @@ cron.schedule('0 21 * * *', () => {
     const now = moment().format('YYYY-MM-DD HH:mm:ss')
     console.log('Running resetRevenueCount at 00:00');
     resetRevenueCount();
-    console.log(now +'\n----------------------------------------------------------------');
+    console.log(now + '\n-------------------------------------------------');
 });
+
+app.post('/update', async (req, res) => {
+     try { 
+        const {networkName, newCapValue } = req.body;
+        console.log('-------------------------------------------------\n!Изменение в Google Tables!\n')
+        console.log(req.body)
+        console.log('\n-------------------------------------------------')
+        if (!networkName || !newCapValue) {
+            return res.status(400).json({ message: 'Missing required fields' });
+          }
+   
+    
+  const cap = await CapModel.findOne({ where: { nameCap: networkName } });
+      if (cap) {  
+        
+        cap.countCap = newCapValue;  // Сбрасываем счетчик
+        cap.fullCap = newCapValue;   // Обновляем fullCap
+        await cap.save();
+  
+        res.status(200).json({ message: 'Cap updated successfully' });
+      } else {
+        res.status(404).json({ message: 'Network not found' });
+      }
+    } catch (error) {
+      res.status(500).json({ message: 'Error updating cap', error });
+    }
+  });
 
 const startServer = async () => {
     try {
         await sequelize.authenticate();
         await sequelize.sync();
         console.log('Connected to database...');
-        
+    
         app.listen(port, () => {
             console.log(`Server is running on port ${port}`);
         });

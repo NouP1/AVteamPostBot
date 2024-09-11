@@ -1,4 +1,4 @@
-const sequelize  = require ('./db.js')
+const sequelize  = require ('../db.js')
 const {DataTypes}  = require('sequelize');
 
 const BuyerModel = sequelize.define(
@@ -24,6 +24,7 @@ const BuyerModel = sequelize.define(
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
+    
     
 
 
