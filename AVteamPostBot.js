@@ -252,8 +252,8 @@ const resetRevenueCount = async () => {
 
 
 
-// const postbackQueue = [];
-// let isProcessing = false; // Флаг, указывающий на то, идет ли в данный момент обработка очереди
+const postbackQueue = [];
+let isProcessing = false; // Флаг, указывающий на то, идет ли в данный момент обработка очереди
 
 // // Функция для обработки данных постбека
 const processPostback = async (postData) => {
@@ -280,7 +280,7 @@ const processPostback = async (postData) => {
             sendToChannelAll(postData, RatingMessage,networkCaps),
             (async () => {
                 try {
-                    await axios.post('http://185.81.115.100/:3100/api/webhook/postback', postData);
+                    await axios.post('https://185.81.115.100/:3100/api/webhook/postback', postData);
                 } catch (error) {
                     console.error('Ошибка отправки на внешний сервер:', error);
                 }
