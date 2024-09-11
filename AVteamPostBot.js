@@ -116,7 +116,7 @@ Time: ${formatTimestamp(data.time)}
 App: ${data.campaign_name}
 GEO: ${data.country}
 Offer: ${data.offer_name}
-Revenue: ${data.payout};
+Revenue: ${data.payout}
 Cap:${networkCaps.fullCap}/${networkCaps.countCap}
 `
         if (responsiblePerson === 'Artur') {
