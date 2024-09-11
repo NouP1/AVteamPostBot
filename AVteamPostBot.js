@@ -27,7 +27,7 @@ const ApiKey = process.env.API_KEY;
 const spreadsheetId = process.env.SPREADSHEETID;
 const bot = new TelegramApi(token, { polling: true });
 
-const channelAll = '-1002164350760'; // ID канала для всех полученных данных
+const channelAll = '-1002191506094'; // ID канала для всех полученных данных
 const channelPasha = '-1002196076246';
 const channelArtur = '-1002211371353';
 
