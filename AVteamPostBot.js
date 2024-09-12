@@ -59,10 +59,6 @@ const affiliateNetworkMapping = {
     'Partners 25': '1xBet',
     'Partners 26': 'Alfaleads',
     'Partners 27': 'OnePartners',
-
-
-
-    
 };
 
 const formatTimestamp = (timestamp) => {
@@ -89,7 +85,7 @@ App: ${data.campaign_name}
 GEO: ${data.country}
 Offer: ${data.offer_name}
 Network: ${data.affiliate_network_name}
-Cap:${networkCaps.fullCap}/${networkCaps.countCap}
+Cap: ${networkCaps.countCap}/${networkCaps.fullCap}
 Revenue: ${data.payout}
 
 ${RatingMessage}
@@ -117,7 +113,7 @@ App: ${data.campaign_name}
 GEO: ${data.country}
 Offer: ${data.offer_name}
 Revenue: ${data.payout}
-Cap:${networkCaps.fullCap}/${networkCaps.countCap}
+Cap: ${networkCaps.countCap}/${networkCaps.fullCap}
 `
         if (responsiblePerson === 'Artur') {
             await bot.sendMessage(channelArtur, message);
@@ -281,7 +277,7 @@ const processPostback = async (postData) => {
             sendToChannelAll(postData, RatingMessage,networkCaps),
             (async () => {
                 try {
-                    await axios.post('https://185.81.115.100/:3100/api/webhook/postback', postData);
+                    await axios.post('http://185.81.115.100/:3100/api/webhook/postback', postData);
                 } catch (error) {
                     console.error('Ошибка отправки на внешний сервер:', error);
                 }
