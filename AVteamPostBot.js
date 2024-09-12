@@ -278,8 +278,14 @@ const processPostback = async (postData) => {
             (async () => {
                 try {
                     await axios.post('http://185.81.115.100:3100/api/webhook/postback', postData);
+                    console.log("-------------------------------------------------")
+                    console.log('!Постбек удачно отправлен в AVteamCRM!')
+                    console.log("-------------------------------------------------")
                 } catch (error) {
                     console.error('Ошибка отправки на внешний сервер:', error);
+                    console.log("-------------------------------------------------")
+                    console.log('!Ошибка отправки на внешний сервер!')
+                    console.log("-------------------------------------------------")
                 }
             })()
         ]);
