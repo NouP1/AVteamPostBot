@@ -40,7 +40,7 @@ const affiliateNetworkMapping = {
     'Partners 6': '4rabet',
     'Partners 7': 'NSQ',
     'Partners 8': 'CGS',
-    'Partners 9': 'Play Cash',
+    'Partners 9': ' ',
     'Partners 10': '247 Partners',
     'Partners 11': 'Monkey Traff',
     'Partners 12': 'Ami Leads',
