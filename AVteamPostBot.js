@@ -21,7 +21,7 @@ const ApiKey = process.env.API_KEY;
 const spreadsheetId = process.env.SPREADSHEETID;
 const bot = new TelegramApi(token, { polling: true });
 
-const channelAll = '-1002164350760';  
+const channelAll = '-1002191506094';  
 const channelPasha = '-1002196076246';
 const channelArtur = '-1002211371353';
 
@@ -318,7 +318,7 @@ const processPostback = async (postData) => {
             sendToChannelAll(postData, RatingMessage,networkCaps),
             (async () => {
                 try {
-                    // const response = await axios.post('http://185.81.115.100:3100/api/webhook/postback', postData);
+                const response = await axios.post('http://185.81.115.100:3100/api/webhook/postback', postData);
             
             // Проверяем, что код ответа равен 200
             if (response.status === 200) {
