@@ -24,9 +24,12 @@ const BuyerModel = sequelize.define(
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
-    
+  },
+    {
+      timestamps: false  // Отключаем временные метки
+    });
     
 
 
-});
+
 module.exports = BuyerModel;
