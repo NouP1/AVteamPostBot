@@ -2,21 +2,15 @@ const express = require('express');
 const TelegramApi = require('node-telegram-bot-api');
 const dayjs = require('dayjs');
 const sequelize = require('./db.js');
-
 const BuyerModel = require('./models/Buyer.js');
 const CapModel = require('./models/Cap.js');
-
 require('dotenv').config();
 const cron = require('node-cron');
 const moment = require('moment');
 const axios = require('axios')
-
 const { auth } = require('google-auth-library');
 const { google } = require('googleapis');
 const serviceAccount = require('./googleapikey.json');
-
-
-
 
 const app = express();
 app.use(express.json());
@@ -27,7 +21,7 @@ const ApiKey = process.env.API_KEY;
 const spreadsheetId = process.env.SPREADSHEETID;
 const bot = new TelegramApi(token, { polling: true });
 
-const channelAll = '-1002191506094'; // ID канала для всех полученных данных
+const channelAll = '-1002164350760';  
 const channelPasha = '-1002196076246';
 const channelArtur = '-1002211371353';
 
@@ -40,7 +34,7 @@ const affiliateNetworkMapping = {
     'Partners 6': '4rabet',
     'Partners 7': 'NSQ',
     'Partners 8': 'CGS',
-    'Partners 9': ' ',
+    'Partners 9': 'Play Cash',
     'Partners 10': '247 Partners',
     'Partners 11': 'Monkey Traff',
     'Partners 12': 'Ami Leads',
@@ -160,8 +154,9 @@ const formatedRatingMessage = async (postData, responsiblePerson) => {
 
 
 
-async function getNetworkCap(networkName) {
+async function getNetworkCap(PostDatanetworkName,PostDataofferName) {
     try {
+        console.log(PostDataofferName)
         const authClient = auth.fromJSON(serviceAccount);
         authClient.scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
         await authClient.authorize();
@@ -181,44 +176,92 @@ async function getNetworkCap(networkName) {
         for (const sheet of sheets) {
             const sheetName = sheet.properties.title;
 
-            // Получаем данные из текущего листа
+            // Получаем данные из текущего листа (диапазон A1:C для Affiliate Network, Offers и Cap)
             const response = await sheetsApi.spreadsheets.values.get({
                 spreadsheetId: spreadsheetId,
-                range: `${sheetName}!A1:B`,  // Обращаемся к диапазону текущего листа
+                range: `${sheetName}!A1:C`,  // Обращаемся к диапазону с учётом нового столбца
             });
 
             const rows = response.data.values;
 
+
+
             if (rows && rows.length > 0) {
-                const networksRow = rows.find(row => row[0] === networkName);
-
+                // Поиск записи по названию сети
+                const networksRow = rows.find(row => 
+                    row[0].trim().toLowerCase() === PostDatanetworkName.trim().toLowerCase() &&
+                    row[1].trim().toLowerCase() === PostDataofferName.trim().toLowerCase()
+                );
+                console.log("-------------------------------------------------");
+                console.log('Найденная строка в Google Tables');               
+                console.log(networksRow)
+                console.log("-------------------------------------------------"); 
+                
                 if (networksRow) {
-                    // Ищем запись в БД по партнёрке
-                    let cap = await CapModel.findOne({ where: { nameCap: networkName } });
-
+                    // Ищем запись в БД по партнёрке и офферу
+                    let cap = await CapModel.findOne({
+                        where: {
+                            nameCap: networksRow[0],  // Affiliate Network
+                            offerName: networksRow[1]  // Offers
+                        }
+                    });
+                
                     if (!cap) {
-                        
                         // Если записи нет, создаём её
                         cap = await CapModel.create({
                             nameCap: networksRow[0],
-                            countCap: networksRow[1] - 1,  // Уменьшаем на 1
-                            fullCap: networksRow[1]
+                            offerName: networksRow[1],
+                            countCap: networksRow[2] - 1,  // Уменьшаем на 1 Cap
+                            fullCap: networksRow[2]
                         });
                     } else {
                         // Если запись есть, обновляем countCap и fullCap
                         cap.countCap -= 1;
-                        cap.fullCap = networksRow[1];
-
+                        cap.fullCap = networksRow[2];
+                
                         // Если countCap меньше 0 или неопределён, сбрасываем его на 0
                         if (cap.countCap < 0 || cap.countCap === undefined || cap.fullCap === undefined) {
                             cap.countCap = 0;
-                            
                         }
-
+                
                         await cap.save();
                     }
-
+                
                     // Возвращаем объект с информацией о Cap
+                    return {
+                        countCap: cap.countCap,
+                        fullCap: cap.fullCap
+                    };
+                } else {
+                    // Если запись не найдена в Google Таблице
+                    console.log(`Запись не найдена в Google Таблице для партнерки ${PostDatanetworkName} и оффера ${PostDataofferName}. Добавляю новую запись в БД.`);
+                
+                    // Ищем запись в БД по партнёрке и офферу
+                    let cap = await CapModel.findOne({
+                        where: {
+                            nameCap: PostDatanetworkName,
+                            offerName: PostDataofferName
+                        }
+                    });
+                
+                    if (!cap) {
+                        // Если записи нет в БД, создаём её с нулевыми значениями
+                        cap = await CapModel.create({
+                            nameCap: PostDatanetworkName,
+                            offerName: PostDataofferName,
+                            countCap: 0,  // Устанавливаем 0 для countCap
+                            fullCap: 0    // Устанавливаем 0 для fullCap
+                        });
+                    } else {
+                        cap.countCap= 0;
+                        cap.fullCap = 0;
+                        await cap.save()
+                        console.log("---------------------------------------------------------------------------------------------------");
+                       console.log(`!!Запись уже существует для ${PostDatanetworkName} и ${PostDataofferName} обнуляю их значения капы!!`);
+                       console.log("----------------------------------------------------------------------------------------------------");
+                    }
+                
+                    // Возвращаем объект с нулевыми значениями капы
                     return {
                         countCap: cap.countCap,
                         fullCap: cap.fullCap
@@ -226,9 +269,7 @@ async function getNetworkCap(networkName) {
                 }
             }
         }
-
-        // Если данные не найдены в Google Sheets
-        throw new Error(`Данные для ${networkName} не найдены.`);
+        throw new Error(`Данные для ${PostDatanetworkName} не найдены.`);
 
     } catch (error) {
         console.error('Error getting sheet data:', error);
@@ -268,7 +309,7 @@ const processPostback = async (postData) => {
 
         const offerParts = postData.campaign_name.split('|');
         const responsiblePerson = offerParts[offerParts.length - 1].trim();
-        const networkCaps = await getNetworkCap(postData.affiliate_network_name)
+        const networkCaps = await getNetworkCap(postData.affiliate_network_name,postData.offer_name)
         const RatingMessage = await formatedRatingMessage(postData, responsiblePerson);
 
         
@@ -277,16 +318,23 @@ const processPostback = async (postData) => {
             sendToChannelAll(postData, RatingMessage,networkCaps),
             (async () => {
                 try {
-                    await axios.post('http://185.81.115.100:3100/api/webhook/postback', postData);
-                    console.log("-------------------------------------------------")
-                    console.log('!Постбек удачно отправлен в AVteamCRM!')
-                    console.log("-------------------------------------------------")
-                } catch (error) {
-                    console.error('Ошибка отправки на внешний сервер:', error);
-                    console.log("-------------------------------------------------")
-                    console.log('!Ошибка отправки на внешний сервер!')
-                    console.log("-------------------------------------------------")
-                }
+                    // const response = await axios.post('http://185.81.115.100:3100/api/webhook/postback', postData);
+            
+            // Проверяем, что код ответа равен 200
+            if (response.status === 200) {
+                console.log("-------------------------------------------------");
+                console.log('Постбек удачно отправлен в AVteamCRM!');
+                console.log('Ответ сервера:', response.data); // можно вывести данные ответа, если нужно
+                console.log("-------------------------------------------------");
+            } else {
+                console.error('Ошибка: неожиданный код ответа', response.status);
+            }
+        } catch (error) {
+            console.error('Ошибка отправки на внешний сервер:', error);
+            console.log("-------------------------------------------------");
+            console.error('Ошибка отправки на внешний сервер!');
+            console.log("-------------------------------------------------");
+        }
             })()
         ]);
         return 'Postback processed';
@@ -378,8 +426,8 @@ const startServer = async () => {
         await sequelize.authenticate();
         await sequelize.sync();
         console.log('Connected to database...');
-    const Test = await getNetworkCap('Test')
-    console.log(Test.countCap,Test.fullCap)
+   
+    
         app.listen(port, () => {
             console.log(`Server is running on port ${port}`);
         });

@@ -1,5 +1,5 @@
 const sequelize  = require ('../db.js')
-const {DataTypes}  = require('sequelize');
+const { DataTypes }  = require('sequelize');
 
 const CapModel = sequelize.define(
   'caps',
@@ -14,10 +14,13 @@ const CapModel = sequelize.define(
       type: DataTypes.STRING,
       defaultValue: 0,
     },
-     countCap: {
+    offerName: {  // Новое поле для хранения Offer
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    countCap: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
-     
     },
     fullCap: {
       type: DataTypes.INTEGER,
@@ -27,6 +30,5 @@ const CapModel = sequelize.define(
   {
     timestamps: false  // Отключаем временные метки
   });
-   
 
 module.exports = CapModel;
