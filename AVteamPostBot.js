@@ -11,6 +11,8 @@ const axios = require('axios')
 const { auth } = require('google-auth-library');
 const { google } = require('googleapis');
 const serviceAccount = require('./googleapikey.json');
+const countryCodes = require('./country.js');
+const affiliateNetworkMapping = require('./affneworks.js')
 
 const app = express();
 app.use(express.json());
@@ -21,43 +23,17 @@ const ApiKey = process.env.API_KEY;
 const spreadsheetId = process.env.SPREADSHEETID;
 const bot = new TelegramApi(token, { polling: true });
 
-const channelAll = '-1002164350760';  
+const channelAll = '-1002191506094';
 const channelPasha = '-1002196076246';
 const channelArtur = '-1002211371353';
-
-const affiliateNetworkMapping = {
-    'Partners 1': 'Cpa bro',
-    'Partners 2': 'Advertise',
-    'Partners 3': '1WIN',
-    'Partners 4': 'Holy Cash',
-    'Partners 5': 'Vpartners',
-    'Partners 6': '4rabet',
-    'Partners 7': 'NSQ',
-    'Partners 8': 'CGS',
-    'Partners 9': 'Play Cash',
-    'Partners 10': '247 Partners',
-    'Partners 11': 'Monkey Traff',
-    'Partners 12': 'Ami Leads',
-    'Partners 13': 'Tesla Traff',
-    'Partners 14': 'X-partners',
-    'Partners 15': '3snet',
-    'Partners 16': 'Chillipartners2',
-    'Partners 17': 'Lgaming',
-    'Partners 18': 'Cpa Rocks',
-    'Partners 19': 'Glory Partners',
-    'Partners 20': 'Royal Partners',
-    'Partners 21': 'Pin-up',
-    'Partners 22': 'Traffi Cake',
-    'Partners 23': 'MoonStar',
-    'Partners 24': 'Vortex',
-    'Partners 25': '1xBet',
-    'Partners 26': 'Alfaleads',
-    'Partners 27': 'OnePartners',
-};
 
 const formatTimestamp = (timestamp) => {
     return dayjs.unix(timestamp).add(3, 'hour').format('YYYY-MM-DD HH:mm:ss');
 };
+
+function getCountryCode(country) {
+    return countryCodes[country] || 'Unknown';
+}
 
 const transformOfferName = (offerName) => {
     const parts = offerName.split('|');
@@ -68,7 +44,7 @@ const transformOfferName = (offerName) => {
 };
 
 
-const sendToChannelAll = async (data, RatingMessage,networkCaps) => {
+const sendToChannelAll = async (data, RatingMessage, networkCaps) => {
     try {
 
         const message = `
@@ -154,7 +130,7 @@ const formatedRatingMessage = async (postData, responsiblePerson) => {
 
 
 
-async function getNetworkCap(PostDatanetworkName,PostDataofferName) {
+async function getNetworkCap(PostDatanetworkName, PostDataofferName, Geo) {
     try {
         console.log(PostDataofferName)
         const authClient = auth.fromJSON(serviceAccount);
@@ -179,54 +155,69 @@ async function getNetworkCap(PostDatanetworkName,PostDataofferName) {
             // Получаем данные из текущего листа (диапазон A1:C для Affiliate Network, Offers и Cap)
             const response = await sheetsApi.spreadsheets.values.get({
                 spreadsheetId: spreadsheetId,
-                range: `${sheetName}!A1:C`,  // Обращаемся к диапазону с учётом нового столбца
+                range: `${sheetName}!A1:E`,  // Обращаемся к диапазону с учётом нового столбца
             });
 
             const rows = response.data.values;
 
-
-
             if (rows && rows.length > 0) {
                 // Поиск записи по названию сети
-                const networksRow = rows.find(row => 
-                    row[0].trim().toLowerCase() === PostDatanetworkName.trim().toLowerCase() &&
-                    row[1].trim().toLowerCase() === PostDataofferName.trim().toLowerCase()
+                const networksRow = rows.find(row =>
+                    row[0].trim().toLowerCase() === Geo.trim().toLowerCase() &&
+                    row[1].trim().toLowerCase() === PostDatanetworkName.trim().toLowerCase() &&
+                    row[2].trim().toLowerCase() === PostDataofferName.trim().toLowerCase()
                 );
                 console.log("-------------------------------------------------");
-                console.log('Найденная строка в Google Tables');               
+                console.log('Найденная строка в Google Tables');
                 console.log(networksRow)
-                console.log("-------------------------------------------------"); 
-                
+                console.log("-------------------------------------------------");
+
                 if (networksRow) {
                     // Ищем запись в БД по партнёрке и офферу
                     let cap = await CapModel.findOne({
                         where: {
-                            nameCap: networksRow[0],  // Affiliate Network
-                            offerName: networksRow[1]  // Offers
+                            Geo: networksRow[0],
+                            nameCap: networksRow[1],  // Affiliate Network
+                            offerName: networksRow[2]  // Offers
                         }
                     });
-                
+
                     if (!cap) {
                         // Если записи нет, создаём её
                         cap = await CapModel.create({
-                            nameCap: networksRow[0],
-                            offerName: networksRow[1],
-                            countCap: networksRow[2] - 1,  // Уменьшаем на 1 Cap
-                            fullCap: networksRow[2]
+                            Geo: networksRow[0],
+                            nameCap: networksRow[1],
+                            offerName: networksRow[2],
+                            countCap: 1,
+                            fullCap: networksRow[3]
                         });
+                        console.log("-------------------------------------------------");
+                        console.log(`!!Создаю запись в БД для  ${Geo} ${PostDatanetworkName} ${PostDataofferName} !!`);
+                        console.log("-------------------------------------------------");
                     } else {
-                        // Если запись есть, обновляем countCap и fullCap
-                        cap.countCap -= 1;
-                        cap.fullCap = networksRow[2];
-                
-                        // Если countCap меньше 0 или неопределён, сбрасываем его на 0
-                        if (cap.countCap < 0 || cap.countCap === undefined || cap.fullCap === undefined) {
+
+                        console.log("-------------------------------------------------");
+                        console.log(`!!Обновляю значения в БД для ${Geo} ${PostDatanetworkName} ${PostDataofferName} !!`);
+                        console.log("-------------------------------------------------");
+
+                        cap.countCap += 1;
+                        cap.fullCap = networksRow[3];
+
+                        if (networksRow[4] === 'TRUE') {
                             cap.countCap = 0;
                         }
-                
+
+                        if (networksRow[3] === '0' || networksRow[3] === undefined) {
+                            cap.fullCap = 0;
+                            cap.countCap = 0;
+                            console.log("-------------------------------------------------");
+                            console.log(`!!Обнулил значения для ${Geo} ${PostDatanetworkName} ${PostDataofferName} !!`);
+                            console.log("-------------------------------------------------");
+                        }
+
                         await cap.save();
                     }
-                
+
                     // Возвращаем объект с информацией о Cap
                     return {
                         countCap: cap.countCap,
@@ -234,8 +225,9 @@ async function getNetworkCap(PostDatanetworkName,PostDataofferName) {
                     };
                 } else {
                     // Если запись не найдена в Google Таблице
-                    console.log(`Запись не найдена в Google Таблице для партнерки ${PostDatanetworkName} и оффера ${PostDataofferName}. Добавляю новую запись в БД.`);
-                
+                    console.log("-------------------------------------------------------------------------------------------------");
+                    console.log(`Запись не найдена в Google Таблице для гео ${Geo} партнерки ${PostDatanetworkName} и оффера ${PostDataofferName}. Добавляю новую запись в БД.`);
+                    console.log("-------------------------------------------------------------------------------------------------");
                     // Ищем запись в БД по партнёрке и офферу
                     let cap = await CapModel.findOne({
                         where: {
@@ -243,7 +235,7 @@ async function getNetworkCap(PostDatanetworkName,PostDataofferName) {
                             offerName: PostDataofferName
                         }
                     });
-                
+
                     if (!cap) {
                         // Если записи нет в БД, создаём её с нулевыми значениями
                         cap = await CapModel.create({
@@ -252,15 +244,18 @@ async function getNetworkCap(PostDatanetworkName,PostDataofferName) {
                             countCap: 0,  // Устанавливаем 0 для countCap
                             fullCap: 0    // Устанавливаем 0 для fullCap
                         });
+                        console.log("-------------------------------------------------");
+                        console.log(`!!Создал запись с нулевыми значениями капы для  ${Geo} ${PostDatanetworkName} и ${PostDataofferName}!!`);
+                        console.log("-------------------------------------------------");
                     } else {
-                        cap.countCap= 0;
+                        cap.countCap = 0;
                         cap.fullCap = 0;
                         await cap.save()
-                        console.log("---------------------------------------------------------------------------------------------------");
-                       console.log(`!!Запись уже существует для ${PostDatanetworkName} и ${PostDataofferName} обнуляю их значения капы!!`);
-                       console.log("----------------------------------------------------------------------------------------------------");
+                        console.log("-------------------------------------------------");
+                        console.log(`!!Запись уже существует для ${Geo} ${PostDatanetworkName} и ${PostDataofferName} обнуляю их значения капы!!`);
+                        console.log("-------------------------------------------------");
                     }
-                
+
                     // Возвращаем объект с нулевыми значениями капы
                     return {
                         countCap: cap.countCap,
@@ -306,35 +301,35 @@ const processPostback = async (postData) => {
 
         postData.payout = Math.floor(parseFloat(postData.payout));
         postData.offer_name = transformOfferName(postData.offer_name);
-
         const offerParts = postData.campaign_name.split('|');
         const responsiblePerson = offerParts[offerParts.length - 1].trim();
-        const networkCaps = await getNetworkCap(postData.affiliate_network_name,postData.offer_name)
+        const geo = getCountryCode(postData.country)
+        const networkCaps = await getNetworkCap(postData.affiliate_network_name, postData.offer_name, geo)
         const RatingMessage = await formatedRatingMessage(postData, responsiblePerson);
 
-        
+
         await Promise.allSettled([
-            sendToChannelNew(postData, responsiblePerson, RatingMessage,networkCaps),
-            sendToChannelAll(postData, RatingMessage,networkCaps),
+            sendToChannelNew(postData, responsiblePerson, RatingMessage, networkCaps),
+            sendToChannelAll(postData, RatingMessage, networkCaps),
             (async () => {
                 try {
-                    // const response = await axios.post('http://185.81.115.100:3100/api/webhook/postback', postData);
-            
-            // Проверяем, что код ответа равен 200
-            if (response.status === 200) {
-                console.log("-------------------------------------------------");
-                console.log('Постбек удачно отправлен в AVteamCRM!');
-                console.log('Ответ сервера:', response.data); // можно вывести данные ответа, если нужно
-                console.log("-------------------------------------------------");
-            } else {
-                console.error('Ошибка: неожиданный код ответа', response.status);
-            }
-        } catch (error) {
-            console.error('Ошибка отправки на внешний сервер:', error);
-            console.log("-------------------------------------------------");
-            console.error('Ошибка отправки на внешний сервер!');
-            console.log("-------------------------------------------------");
-        }
+                    const response = await axios.post('http://185.81.115.100:3100/api/webhook/postback', postData);
+
+                    // Проверяем, что код ответа равен 200
+                    if (response.status === 200) {
+                        console.log("-------------------------------------------------");
+                        console.log('Постбек удачно отправлен в AVteamCRM!');
+                        console.log('Ответ сервера:', response.data); // можно вывести данные ответа, если нужно
+                        console.log("-------------------------------------------------");
+                    } else {
+                        console.error('Ошибка: неожиданный код ответа', response.status);
+                    }
+                } catch (error) {
+                    console.error('Ошибка отправки на внешний сервер:', error);
+                    console.log("-------------------------------------------------");
+                    console.error('Ошибка отправки на внешний сервер!');
+                    console.log("-------------------------------------------------");
+                }
             })()
         ]);
         return 'Postback processed';
@@ -395,39 +390,63 @@ cron.schedule('0 21 * * *', () => {
 });
 
 app.post('/update', async (req, res) => {
-     try { 
-        const {networkName, newCapValue } = req.body;
-        console.log('-------------------------------------------------\n!Изменение в Google Tables!\n')
+    try {
+        const { geo, networkName, offerName, newCapValue } = req.body;
+        console.log('-------------------------------------------------\n!Изменение в Google Tables: CAP!\n')
         console.log(req.body)
         console.log('\n-------------------------------------------------')
-        if (!networkName || !newCapValue) {
+
+        if (!geo || !networkName || !newCapValue || !offerName) {
             return res.status(400).json({ message: 'Missing required fields' });
-          }
-   
-    
-  const cap = await CapModel.findOne({ where: { nameCap: networkName } });
-      if (cap) {  
-        
-        cap.countCap = newCapValue;  // Сбрасываем счетчик
-        cap.fullCap = newCapValue;   // Обновляем fullCap
-        await cap.save();
-  
-        res.status(200).json({ message: 'Cap updated successfully' });
-      } else {
-        res.status(404).json({ message: 'Network not found' });
-      }
+        }
+
+        const cap = await CapModel.findOne({ where: { Geo: geo, nameCap: networkName, offerName: offerName } });
+        if (cap) {
+            cap.fullCap = newCapValue;   // Обновляем fullCap
+            await cap.save();
+
+            res.status(200).json({ message: 'Cap updated successfully' });
+        } else {
+            res.status(404).json({ message: 'Network not found' });
+        }
     } catch (error) {
-      res.status(500).json({ message: 'Error updating cap', error });
+        res.status(500).json({ message: 'Error updating cap', error });
     }
-  });
+});
+
+app.post('/reset', async (req, res) => {
+    try {
+        const { geo, networkName, offerName, resetCap } = req.body;
+        console.log('-------------------------------------------------\n!Изменение в Google Tables: RESET!\n')
+        console.log(req.body)
+        console.log('\n-------------------------------------------------')
+
+        if (!geo || !networkName || !offerName || !resetCap) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+      
+        const cap = await CapModel.findOne({ where: { Geo: geo, nameCap: networkName, offerName: offerName } });
+
+        if (cap && resetCap) {
+            cap.countCap = 0;
+            await cap.save();
+            res.status(200).json({ message: 'Cap updated successfully' });
+        } else {
+            res.status(404).json({ message: 'Network not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating cap', error });
+    }
+});
 
 const startServer = async () => {
     try {
         await sequelize.authenticate();
         await sequelize.sync();
         console.log('Connected to database...');
-   
-    
+
+
         app.listen(port, () => {
             console.log(`Server is running on port ${port}`);
         });

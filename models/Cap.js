@@ -10,6 +10,10 @@ const CapModel = sequelize.define(
       unique: true,
       autoIncrement: true
     },
+    Geo: {
+      type: DataTypes.STRING,
+      defaultValue: 0,
+    },
     nameCap: {
       type: DataTypes.STRING,
       defaultValue: 0,
