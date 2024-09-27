@@ -163,6 +163,7 @@ async function getNetworkCap(PostDatanetworkName, PostDataofferName, Geo) {
             if (rows && rows.length > 0) {
                 // Поиск записи по названию сети
                 const networksRow = rows.find(row =>
+                    row[0] && row[1] && row[2] &&
                     row[0].trim().toLowerCase() === Geo.trim().toLowerCase() &&
                     row[1].trim().toLowerCase() === PostDatanetworkName.trim().toLowerCase() &&
                     row[2].trim().toLowerCase() === PostDataofferName.trim().toLowerCase()
