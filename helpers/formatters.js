@@ -37,3 +37,10 @@ exports.formatedRatingMessage = async (postData, responsiblePerson) => {
     }
 
 };
+exports.TablesTransformOfferName = (offerName) => {
+    if (typeof offerName !== 'string' || offerName.trim() === '') {
+        return ''; 
+    }
+    const parts = offerName.split(' ');
+    return parts.length >= 2 ? parts[0] : offerName;
+};
