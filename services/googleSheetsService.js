@@ -31,7 +31,7 @@ const getNetworkCap = async (PostDatanetworkName,PostDataofferName,Geo) => {
             });
 
             const rows = response.data.values;
-            console.log(rows)
+            
 
             if (rows && rows.length > 0) {
 
