@@ -2,6 +2,7 @@ const { auth } = require('google-auth-library');
 const { google } = require('googleapis');
 const CapModel = require('../models/Cap');
 const serviceAccount = require('../googleapikey.json');
+const {TablesTransformOfferName} = require('../helpers/formatters')
 require('dotenv').config();
 const spreadsheetId = process.env.SPREADSHEETID;
 
@@ -23,6 +24,8 @@ const getNetworkCap = async (PostDatanetworkName,PostDataofferName,Geo) => {
             throw new Error('Не удалось найти листы в таблице.');
         }
 
+        PostDataofferName = TablesTransformOfferName(PostDataofferName);
+
         for (const sheet of sheets) {
             const sheetName = sheet.properties.title;
             const response = await sheetsApi.spreadsheets.values.get({
@@ -31,7 +34,6 @@ const getNetworkCap = async (PostDatanetworkName,PostDataofferName,Geo) => {
             });
 
             const rows = response.data.values;
-            
 
             if (rows && rows.length > 0) {
 

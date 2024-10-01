@@ -52,7 +52,6 @@ const processPostback = async (postData) => {
         const networkCaps = await getNetworkCap(postData.affiliate_network_name, postData.offer_name, geo)
         const RatingMessage = await formatedRatingMessage(postData, responsiblePerson);
 
-
         await Promise.allSettled([
             sendToChannelNew(postData, responsiblePerson, RatingMessage, networkCaps),
             sendToChannelAll(postData, RatingMessage, networkCaps),
