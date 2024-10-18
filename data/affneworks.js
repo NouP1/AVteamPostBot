@@ -27,7 +27,9 @@ const affiliateNetworkMapping = {
     'Partners 26': 'Alfaleads',
     'Partners 27': 'OnePartners',
     'Partners 28': 'Chillipartners1',
-    'Partners 29': 'Gpartners'
+    'Partners 29': 'Gpartners',
+    'Parners 30' : 'Clicklead'
+    
 };
 
 module.exports = affiliateNetworkMapping;
