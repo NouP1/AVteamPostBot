@@ -8,6 +8,8 @@ const channelPasha = process.env.CH_PASHA;
 const channelArtur = process.env.CH_ARTUR;
 const channelIliya = process.env.CH_ILIYA;
 const channelStas = process.env.CH_STAS;
+const channelRustam = process.env.CH_RUSTAM;
+
 
 const bot = new TelegramApi(token, { polling: true });
 
@@ -66,6 +68,10 @@ Cap: ${networkCaps.countCap}/${networkCaps.fullCap}
         }
         if (responsiblePerson === 'Stas') {
             await bot.sendMessage(channelStas, message);
+            //await bot.sendMessage(channelAll, RatingMessage);
+        }
+        if (responsiblePerson === 'Rustam') {
+            await bot.sendMessage(channelRustam, message);
             //await bot.sendMessage(channelAll, RatingMessage);
         }
 

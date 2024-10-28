@@ -20,6 +20,8 @@ app.use(express.json());
 const port = process.env.PORT;
 const crm = process.env.CRM;
 
+// !Нужно обязательно ключить Redis!
+
 const postbackQueue = new Queue('postbackQueue', {
     redis: { host: '127.0.0.1', port: 6379 }
 });
@@ -59,11 +61,10 @@ const processPostback = async (postData) => {
                 try {
                     const response = await axios.post(crm, postData);
 
-                    // Проверяем, что код ответа равен 200
                     if (response.status === 200) {
                         console.log("-------------------------------------------------");
                         console.log('Постбек удачно отправлен в AVteamCRM!');
-                        console.log('Ответ сервера:', response.data); // можно вывести данные ответа, если нужно
+                        console.log('Ответ сервера:', response.data); 
                         console.log("-------------------------------------------------");
                     } else {
                         console.error('Ошибка: неожиданный код ответа', response.status);
@@ -141,7 +142,7 @@ app.post('/update', async (req, res) => {
 
         const cap = await CapModel.findOne({ where: { Geo: geo, nameCap: networkName, offerName: offerName } });
         if (cap) {
-            cap.fullCap = newCapValue;   // Обновляем fullCap
+            cap.fullCap = newCapValue;  
             await cap.save();
 
             res.status(200).json({ message: 'Cap updated successfully' });
