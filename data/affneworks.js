@@ -29,7 +29,8 @@ const affiliateNetworkMapping = {
     'Partners 28': 'Chillipartners1',
     'Partners 29': 'Gpartners',
     'Partners 30': 'Clicklead',
-    'Partners 31': 'Profitov'
+    'Partners 31': 'Profitov',
+    'Partners 32': 'Trafflab',
     
 };
 
