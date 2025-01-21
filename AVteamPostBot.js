@@ -100,17 +100,17 @@ app.get('/postback', async (req, res) => {
         } = req.query;
         console.log(req.query)
 
-        if (!postData.clickid) {
-            console.log('clickid is missing, skipping.');
-            return res.status(400).send('clickid is required.');
-        }
+        // if (!postData.clickid) {
+        //     console.log('clickid is missing, skipping.');
+        //     return res.status(400).send('clickid is required.');
+        // }
 
-        const existingPostback = await PostbackModel.findOne({ where: { clickid: postData.clickid } });
-        if (existingPostback) {
-            console.log(`Duplicate clickid found: ${postData.clickid}, skipping.`);
-            return res.status(200).send('Duplicate clickid, skipped.');
-        }
-        await PostbackModel.create({ clickid: postData.clickid });
+        // const existingPostback = await PostbackModel.findOne({ where: { clickid: postData.clickid } });
+        // if (existingPostback) {
+        //     console.log(`Duplicate clickid found: ${postData.clickid}, skipping.`);
+        //     return res.status(200).send('Duplicate clickid, skipped.');
+        // }
+        // await PostbackModel.create({ clickid: postData.clickid });
 
         await postbackQueue.add(postData);
 
