@@ -3,6 +3,7 @@ const TelegramApi = require('node-telegram-bot-api');
 const sequelize = require('./models/db.js');
 const BuyerModel = require('./models/Buyer.js');
 const CapModel = require('./models/Cap.js');
+const PostbackModel = require('./models/PostbackModel.js')
 const cron = require('node-cron');
 const moment = require('moment');
 const axios = require('axios')
@@ -98,6 +99,18 @@ app.get('/postback', async (req, res) => {
             payout
         } = req.query;
         console.log(req.query)
+
+        if (!postData.clickid) {
+            console.log('clickid is missing, skipping.');
+            return res.status(400).send('clickid is required.');
+        }
+
+        const existingPostback = await PostbackModel.findOne({ where: { clickid: postData.clickid } });
+        if (existingPostback) {
+            console.log(`Duplicate clickid found: ${postData.clickid}, skipping.`);
+            return res.status(200).send('Duplicate clickid, skipped.');
+        }
+        await PostbackModel.create({ clickid: postData.clickid });
 
         await postbackQueue.add(postData);
 
