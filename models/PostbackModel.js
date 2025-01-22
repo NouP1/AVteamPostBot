@@ -4,14 +4,21 @@ const { DataTypes }  = require('sequelize');
 const PostbackModel = sequelize.define(
   'postback',
   {
-    clickid: { 
+    clickid: {
       type: DataTypes.STRING,
-      unique: true, // Уникальное ограничение
       allowNull: false,
-    },
   },
-  {
-    timestamps: false  // Отключаем временные метки
-  });
+  status: {
+      type: DataTypes.ENUM('sale', 'first_dep'),
+      allowNull: false,
+  },
+}, {
+  timestamps: false,
+  uniqueKeys: {
+      unique_clickid_status: {
+          fields: ['clickid', 'status'], // Уникальность пары clickid + status
+      },
+  },
+});
 
 module.exports = PostbackModel;

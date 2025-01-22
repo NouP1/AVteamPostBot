@@ -96,21 +96,29 @@ app.get('/postback', async (req, res) => {
             country,
             offer_name,
             affiliate_network_name,
-            payout
+            payout,
+            status,
         } = req.query;
         console.log(req.query)
 
-        // if (!postData.clickid) {
-        //     console.log('clickid is missing, skipping.');
-        //     return res.status(400).send('clickid is required.');
-        // }
+        if (!clickid || !status) {
+            console.log('clickid or status is missing, skipping.');
+            return res.status(400).send('clickid and status are required.');
+        }
 
-        // const existingPostback = await PostbackModel.findOne({ where: { clickid: postData.clickid } });
-        // if (existingPostback) {
-        //     console.log(`Duplicate clickid found: ${postData.clickid}, skipping.`);
-        //     return res.status(200).send('Duplicate clickid, skipped.');
-        // }
-        // await PostbackModel.create({ clickid: postData.clickid });
+        if(status ==='sale' || status === 'first_dep') {
+
+        const existingPostback = await PostbackModel.findOne({
+            where: { clickid, status },
+        });
+
+        if (existingPostback) {
+            console.log(`Duplicate clickid and status found: ${clickid}, skipping.`);
+            return res.status(200).send('Duplicate clickid and status, skipped.');
+        } else {
+             await PostbackModel.create({ clickid: postData.clickid, status: postData.status });
+        }
+       } 
 
         await postbackQueue.add(postData);
 
