@@ -31,7 +31,7 @@ const affiliateNetworkMapping = {
     'Partners 30': 'Clicklead',
     'Partners 31': 'Profitov',
     'Partners 32': 'Trafflab',
-    'Partners 33': 'ChillipartnersBudget',
+    'Partners 33': '22bet',
     
 };
 
