@@ -137,7 +137,10 @@ const getNetworkCap = async (PostDatanetworkName,PostDataofferName,Geo) => {
 
     } catch (error) {
         console.error('Error getting sheet data:', error);
-        throw error;
+        return {
+            countCap: 0,
+            fullCap: 0
+        }
     }
 }
 module.exports = getNetworkCap;
