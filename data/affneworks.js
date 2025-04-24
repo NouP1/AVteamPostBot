@@ -33,6 +33,7 @@ const affiliateNetworkMapping = {
     'Partners 32': 'Trafflab',
     'Partners 33': '22bet',
     'Partners 34': 'TopDollar',
+    'Partners 35' : 'Spinarium'
     
 };
 
